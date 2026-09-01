@@ -1,0 +1,296 @@
+{
+  "vectors": [
+    {
+      "id": "01_valid_transition",
+      "specification": {
+        "transitions": [
+          {
+            "id": "T001",
+            "from": ["UNINITIALIZED"],
+            "event": "EVENT_RECEIVED",
+            "guards": ["True"],
+            "effects": ["record_event_observation", "set_state_pending_verification"],
+            "forbidden_effects": [],
+            "invariants": []
+          }
+        ]
+      },
+      "previous_state": {
+        "authoritative_activation": null,
+        "node": {
+          "state": "UNINITIALIZED",
+          "local_activation": null,
+          "seen_event_ids": [],
+          "activation_identities": [],
+          "quarantine_state": false
+        }
+      },
+      "event": {
+        "type": "EVENT_RECEIVED",
+        "payload": { "event_id": "evt1" }
+      },
+      "expected_result": {
+        "transition_id": "T001",
+        "decision": "TRANSITION",
+        "effects_applied": [
+          "record_event_observation",
+          "set_state_pending_verification"
+        ]
+      }
+    },
+
+    {
+      "id": "02_noop",
+      "specification": {
+        "transitions": []
+      },
+      "previous_state": {
+        "authoritative_activation": null,
+        "node": {
+          "state": "UNINITIALIZED",
+          "local_activation": null,
+          "seen_event_ids": [],
+          "activation_identities": [],
+          "quarantine_state": false
+        }
+      },
+      "event": {
+        "type": "EVENT_RECEIVED",
+        "payload": { "event_id": "evt2" }
+      },
+      "expected_result": {
+        "transition_id": null,
+        "decision": "NOOP",
+        "effects_applied": []
+      }
+    },
+
+    {
+      "id": "03_ambiguity_failure",
+      "specification": {
+        "transitions": [
+          {
+            "id": "T001",
+            "from": ["UNINITIALIZED"],
+            "event": "EVENT_RECEIVED",
+            "guards": ["True"],
+            "effects": [],
+            "forbidden_effects": [],
+            "invariants": []
+          },
+          {
+            "id": "T002",
+            "from": ["UNINITIALIZED"],
+            "event": "EVENT_RECEIVED",
+            "guards": ["True"],
+            "effects": [],
+            "forbidden_effects": [],
+            "invariants": []
+          }
+        ]
+      },
+      "previous_state": {
+        "authoritative_activation": null,
+        "node": {
+          "state": "UNINITIALIZED",
+          "local_activation": null,
+          "seen_event_ids": [],
+          "activation_identities": [],
+          "quarantine_state": false
+        }
+      },
+      "event": {
+        "type": "EVENT_RECEIVED",
+        "payload": { "event_id": "evt3" }
+      },
+      "expected_result": {
+        "transition_id": null,
+        "decision": "AMBIGUITY_FAILURE",
+        "effects_applied": []
+      }
+    },
+
+    {
+      "id": "04_guard_failure",
+      "specification": {
+        "transitions": [
+          {
+            "id": "T001",
+            "from": ["UNINITIALIZED"],
+            "event": "EVENT_RECEIVED",
+            "guards": ["False"],
+            "effects": ["record_event_observation"],
+            "forbidden_effects": [],
+            "invariants": []
+          }
+        ]
+      },
+      "previous_state": {
+        "authoritative_activation": null,
+        "node": {
+          "state": "UNINITIALIZED",
+          "local_activation": null,
+          "seen_event_ids": [],
+          "activation_identities": [],
+          "quarantine_state": false
+        }
+      },
+      "event": {
+        "type": "EVENT_RECEIVED",
+        "payload": { "event_id": "evt4" }
+      },
+      "expected_result": {
+        "transition_id": null,
+        "decision": "NOOP",
+        "effects_applied": []
+      }
+    },
+
+    {
+      "id": "05_undeclared_mutation",
+      "specification": {
+        "transitions": [
+          {
+            "id": "T001",
+            "from": ["UNINITIALIZED"],
+            "event": "EVENT_RECEIVED",
+            "guards": ["True"],
+            "effects": ["record_event_observation"],
+            "forbidden_effects": [],
+            "invariants": []
+          }
+        ]
+      },
+      "previous_state": {
+        "authoritative_activation": null,
+        "node": {
+          "state": "UNINITIALIZED",
+          "local_activation": null,
+          "seen_event_ids": [],
+          "activation_identities": [],
+          "quarantine_state": false
+        }
+      },
+      "event": {
+        "type": "EVENT_RECEIVED",
+        "payload": {
+          "event_id": "evt5",
+          "force_state_change": "ACTIVE"
+        }
+      },
+      "expected_result": {
+        "transition_id": "T001",
+        "decision": "EFFECT_FAILURE",
+        "effects_applied": []
+      }
+    },
+
+    {
+      "id": "06_forbidden_effect",
+      "specification": {
+        "transitions": [
+          {
+            "id": "T001",
+            "from": ["UNINITIALIZED"],
+            "event": "EVENT_RECEIVED",
+            "guards": ["True"],
+            "effects": ["record_event_observation", "modify_authoritative_activation"],
+            "forbidden_effects": ["modify_authoritative_activation"],
+            "invariants": []
+          }
+        ]
+      },
+      "previous_state": {
+        "authoritative_activation": null,
+        "node": {
+          "state": "UNINITIALIZED",
+          "local_activation": null,
+          "seen_event_ids": [],
+          "activation_identities": [],
+          "quarantine_state": false
+        }
+      },
+      "event": {
+        "type": "EVENT_RECEIVED",
+        "payload": { "event_id": "evt6", "authoritative_activation": {"epoch": 1} }
+      },
+      "expected_result": {
+        "transition_id": "T001",
+        "decision": "EFFECT_FAILURE",
+        "effects_applied": []
+      }
+    },
+
+    {
+      "id": "07_invariant_failure",
+      "specification": {
+        "transitions": [
+          {
+            "id": "T001",
+            "from": ["UNINITIALIZED"],
+            "event": "EVENT_RECEIVED",
+            "guards": ["True"],
+            "effects": ["set_state_active"],
+            "forbidden_effects": [],
+            "invariants": ["N1_NO_UNVERIFIED_ACTIVATION"]
+          }
+        ]
+      },
+      "previous_state": {
+        "authoritative_activation": null,
+        "node": {
+          "state": "UNINITIALIZED",
+          "local_activation": null,
+          "seen_event_ids": [],
+          "activation_identities": [],
+          "quarantine_state": false
+        }
+      },
+      "event": {
+        "type": "EVENT_RECEIVED",
+        "payload": { "event_id": "evt7" }
+      },
+      "expected_result": {
+        "transition_id": "T001",
+        "decision": "INVARIANT_FAILURE",
+        "effects_applied": []
+      }
+    },
+
+    {
+      "id": "10_invalid_specification",
+      "specification": {
+        "transitions": [
+          {
+            "id": "T001",
+            "from": ["UNKNOWN_STATE"],
+            "event": "EVENT_RECEIVED",
+            "guards": ["True"],
+            "effects": [],
+            "forbidden_effects": [],
+            "invariants": []
+          }
+        ]
+      },
+      "previous_state": {
+        "authoritative_activation": null,
+        "node": {
+          "state": "UNINITIALIZED",
+          "local_activation": null,
+          "seen_event_ids": [],
+          "activation_identities": [],
+          "quarantine_state": false
+        }
+      },
+      "event": {
+        "type": "EVENT_RECEIVED",
+        "payload": { "event_id": "evt10" }
+      },
+      "expected_result": {
+        "transition_id": null,
+        "decision": "VALIDATION_FAILURE",
+        "effects_applied": []
+      }
+    }
+  ]
+}
