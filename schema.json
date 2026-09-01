@@ -1,0 +1,109 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "title": "policy-activation.v1 schema",
+  "type": "object",
+  "required": [
+    "protocol",
+    "states",
+    "events",
+    "decisions",
+    "effects",
+    "invariants",
+    "transitions"
+  ],
+  "properties": {
+    "protocol": {
+      "type": "object",
+      "required": ["id", "version", "canonicalization", "hash_algorithm"],
+      "properties": {
+        "id": { "type": "string" },
+        "version": { "type": "string" },
+        "canonicalization": { "type": "string" },
+        "hash_algorithm": { "type": "string" }
+      }
+    },
+
+    "states": {
+      "type": "array",
+      "items": { "type": "string" },
+      "minItems": 1,
+      "uniqueItems": true
+    },
+
+    "events": {
+      "type": "array",
+      "items": { "type": "string" },
+      "minItems": 1,
+      "uniqueItems": true
+    },
+
+    "decisions": {
+      "type": "array",
+      "items": { "type": "string" },
+      "minItems": 1,
+      "uniqueItems": true
+    },
+
+    "effects": {
+      "type": "array",
+      "items": { "type": "string" },
+      "minItems": 1,
+      "uniqueItems": true
+    },
+
+    "invariants": {
+      "type": "object",
+      "additionalProperties": {
+        "type": "object"
+      }
+    },
+
+    "transitions": {
+      "type": "array",
+      "minItems": 1,
+      "items": {
+        "type": "object",
+        "required": [
+          "id",
+          "from",
+          "event",
+          "guards",
+          "effects",
+          "forbidden_effects",
+          "invariants"
+        ],
+        "properties": {
+          "id": { "type": "string" },
+
+          "from": {
+            "type": "array",
+            "items": { "type": "string" },
+            "minItems": 1
+          },
+
+          "event": { "type": "string" },
+
+          "guards": {
+            "type": "array",
+            "items": { "type": "string" }
+          },
+
+          "effects": {
+            "type": "array",
+            "items": { "type": "string" }
+          },
+
+          "forbidden_effects": {
+            "type": "array",
+            "items": { "type": "string" }
+          },
+
+          "invariants": {
+            "type": "array",
+            "items": { "type": "string" }
+          }
+        }
+      }
+    }
+  }
+}
