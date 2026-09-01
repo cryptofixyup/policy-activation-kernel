@@ -1,0 +1,198 @@
+{
+  "protocol": {
+    "id": "policy-activation",
+    "version": "1.0.0",
+    "canonicalization": "RFC-8785",
+    "hash_algorithm": "SHA-256"
+  },
+  "states": [
+    "UNINITIALIZED",
+    "PENDING_VERIFICATION",
+    "STAGED",
+    "ACTIVE",
+    "QUARANTINED",
+    "RECONCILING"
+  ],
+  "events": [
+    "AUTHORITATIVE_ACTIVATION_OBSERVED",
+    "EVENT_RECEIVED",
+    "VERIFICATION_SUCCEEDED",
+    "VERIFICATION_FAILED",
+    "RECONCILIATION_REQUESTED",
+    "RECONCILIATION_SUCCEEDED",
+    "QUARANTINE_REQUESTED"
+  ],
+  "decisions": [
+    "TRANSITION",
+    "NOOP",
+    "AMBIGUITY_FAILURE",
+    "GUARD_FAILURE",
+    "EFFECT_FAILURE",
+    "INVARIANT_FAILURE",
+    "VALIDATION_FAILURE"
+  ],
+  "effects": [
+    "record_event_observation",
+    "set_state_uninitialized",
+    "set_state_pending_verification",
+    "set_state_staged",
+    "set_state_active",
+    "set_state_quarantined",
+    "set_state_reconciling",
+    "set_quarantine_true",
+    "set_candidate_activation_tuple",
+    "set_active_activation",
+    "set_active_activation_to_authority",
+    "record_effective_activation",
+    "emit_activation_decision",
+    "modify_authoritative_activation",
+    "activate_different_tuple",
+    "create_duplicate_effective_activation"
+  ],
+  "invariants": {
+    "I1_TELEMETRY_IMMUTABILITY": {},
+    "I2_EVENT_IDENTITY_AND_PAYLOAD_INTEGRITY": {},
+    "P1_ARTIFACT_IMMUTABILITY": {},
+    "P2_AUTHORITATIVE_EPOCH_ORDERING": {},
+    "P3_IDENTIFIER_SEPARATION": {},
+    "N1_NO_UNVERIFIED_ACTIVATION": {},
+    "N2_STALE_DELIVERY_NOT_INTEGRITY_FAILURE": {},
+    "N3_IDEMPOTENT_EFFECTIVE_TRANSITIONS": {},
+    "C1_EPOCH_SCOPED_CONVERGENCE_MEMBERSHIP": {},
+    "C2_AUTHORITATIVE_RECONCILIATION": {},
+    "C3_INTENT_ADOPTION_INDEPENDENCE": {},
+    "S1_TRANSITION_CLOSURE": {},
+    "S2_EFFECT_CLOSURE": {},
+    "S3_TOTAL_OBSERVABILITY": {}
+  },
+  "transitions": [
+    {
+      "id": "T001_RECEIVE_DUPLICATE",
+      "from": ["UNINITIALIZED", "PENDING_VERIFICATION", "STAGED", "ACTIVE", "QUARANTINED", "RECONCILING"],
+      "event": "EVENT_RECEIVED",
+      "guards": ["event.event_id in node.seen_event_ids"],
+      "effects": ["record_event_observation"],
+      "forbidden_effects": ["modify_active_activation", "emit_activation_decision"],
+      "invariants": ["N3_IDEMPOTENT_EFFECTIVE_TRANSITIONS", "S1_TRANSITION_CLOSURE"]
+    },
+    {
+      "id": "T002_RECEIVE_STALE",
+      "from": ["PENDING_VERIFICATION", "STAGED", "ACTIVE", "RECONCILING"],
+      "event": "EVENT_RECEIVED",
+      "guards": ["event.activation_epoch < node.local_activation.activation_epoch"],
+      "effects": ["record_event_observation"],
+      "forbidden_effects": ["modify_active_activation", "emit_activation_decision"],
+      "invariants": ["N2_STALE_DELIVERY_NOT_INTEGRITY_FAILURE", "S1_TRANSITION_CLOSURE"]
+    },
+    {
+      "id": "T003_RECEIVE_CANDIDATE",
+      "from": ["UNINITIALIZED", "PENDING_VERIFICATION", "STAGED", "ACTIVE", "RECONCILING"],
+      "event": "EVENT_RECEIVED",
+      "guards": [
+        "event.activation_epoch >= node.local_activation.activation_epoch",
+        "not(event.event_id in node.seen_event_ids)"
+      ],
+      "effects": ["record_event_observation", "set_state_pending_verification"],
+      "forbidden_effects": [],
+      "invariants": ["P3_IDENTIFIER_SEPARATION", "S1_TRANSITION_CLOSURE"]
+    },
+    {
+      "id": "T004_REJECT_INVALID_CANDIDATE",
+      "from": ["PENDING_VERIFICATION"],
+      "event": "VERIFICATION_FAILED",
+      "guards": [
+        "not(event.hash_verified)",
+        "not(event.attestation_verified)",
+        "not(event.lineage_verified)",
+        "not(event.compatible)"
+      ],
+      "effects": ["set_state_uninitialized"],
+      "forbidden_effects": ["set_state_active", "emit_activation_decision"],
+      "invariants": ["N1_NO_UNVERIFIED_ACTIVATION", "S1_TRANSITION_CLOSURE"]
+    },
+    {
+      "id": "T005_QUARANTINE_INTEGRITY_FAILURE",
+      "from": ["PENDING_VERIFICATION", "STAGED", "ACTIVE"],
+      "event": "VERIFICATION_FAILED",
+      "guards": ["event.integrity_uncertain"],
+      "effects": ["set_state_quarantined", "set_quarantine_true"],
+      "forbidden_effects": ["emit_activation_decision"],
+      "invariants": ["N1_NO_UNVERIFIED_ACTIVATION", "S1_TRANSITION_CLOSURE"]
+    },
+    {
+      "id": "T006_STAGE_VERIFIED_ARTIFACT",
+      "from": ["PENDING_VERIFICATION", "UNINITIALIZED"],
+      "event": "VERIFICATION_SUCCEEDED",
+      "guards": [
+        "event.hash_verified",
+        "event.attestation_verified",
+        "event.lineage_verified",
+        "event.compatible"
+      ],
+      "effects": ["set_state_staged", "set_candidate_activation_tuple"],
+      "forbidden_effects": [],
+      "invariants": ["P1_ARTIFACT_IMMUTABILITY", "P3_IDENTIFIER_SEPARATION", "S1_TRANSITION_CLOSURE"]
+    },
+    {
+      "id": "T007_ACTIVATE_MATCHING_AUTHORITY",
+      "from": ["STAGED"],
+      "event": "AUTHORITATIVE_ACTIVATION_OBSERVED",
+      "guards": [
+        "candidate_is_verified",
+        "candidate_matches_authoritative_tuple",
+        "candidate_epoch_not_stale",
+        "no_effective_activation_exists"
+      ],
+      "effects": [
+        "set_active_activation",
+        "record_effective_activation",
+        "set_state_active",
+        "emit_activation_decision"
+      ],
+      "forbidden_effects": [
+        "modify_authoritative_activation",
+        "activate_different_tuple",
+        "create_duplicate_effective_activation"
+      ],
+      "invariants": [
+        "N1_NO_UNVERIFIED_ACTIVATION",
+        "N3_IDEMPOTENT_EFFECTIVE_TRANSITIONS",
+        "P2_AUTHORITATIVE_EPOCH_ORDERING",
+        "S1_TRANSITION_CLOSURE"
+      ]
+    },
+    {
+      "id": "T008_REQUEST_RECONCILIATION",
+      "from": ["ACTIVE", "UNINITIALIZED"],
+      "event": "RECONCILIATION_REQUESTED",
+      "guards": ["authoritative_activation.activation_epoch > node.local_activation.activation_epoch"],
+      "effects": ["set_state_reconciling"],
+      "forbidden_effects": [],
+      "invariants": ["C2_AUTHORITATIVE_RECONCILIATION", "S1_TRANSITION_CLOSURE"]
+    },
+    {
+      "id": "T009_RECONCILE_TO_AUTHORITY",
+      "from": ["RECONCILING"],
+      "event": "RECONCILIATION_SUCCEEDED",
+      "guards": [
+        "authoritative_activation.activation_epoch >= node.local_activation.activation_epoch"
+      ],
+      "effects": ["set_active_activation_to_authority", "set_state_active"],
+      "forbidden_effects": ["activate_different_tuple"],
+      "invariants": [
+        "C2_AUTHORITATIVE_RECONCILIATION",
+        "N3_IDEMPOTENT_EFFECTIVE_TRANSITIONS",
+        "S1_TRANSITION_CLOSURE"
+      ]
+    },
+    {
+      "id": "T010_ENTER_QUARANTINE",
+      "from": ["UNINITIALIZED", "PENDING_VERIFICATION", "STAGED", "ACTIVE", "QUARANTINED", "RECONCILING"],
+      "event": "QUARANTINE_REQUESTED",
+      "guards": ["event.integrity_uncertain"],
+      "effects": ["set_state_quarantined", "set_quarantine_true"],
+      "forbidden_effects": ["emit_activation_decision"],
+      "invariants": ["N1_NO_UNVERIFIED_ACTIVATION", "S1_TRANSITION_CLOSURE"]
+    }
+  ]
+}
