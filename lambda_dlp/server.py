@@ -1,6 +1,6 @@
 from fastapi import FastAPI, Request, Response
 
-from lambda_dlp.index import handler
+from index import handler
 
 
 app = FastAPI(
