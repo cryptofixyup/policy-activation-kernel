@@ -1,6 +1,6 @@
 from fastapi import FastAPI, Request, Response
 
-from index import handler
+from lambda_dlp.index import handler
 
 
 app = FastAPI(
@@ -21,7 +21,6 @@ async def proxy(request: Request) -> Response:
     }
 
     result = handler(event, None)
-
     response_headers = result.get("headers", {})
     content_type = response_headers.get(
         "Content-Type",
