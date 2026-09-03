@@ -9,7 +9,7 @@ import urllib3
 IP_REGEX = re.compile(r"\b(?:[0-9]{1,3}\.){3}[0-9]{1,3}\b")
 EMAIL_REGEX = re.compile(r"\b[A-Za-z0-9._%+-]+@[A-Za-z0-9.-]+\.[A-Za-z]{2,}\b")
 CREDENTIAL_KEY_REGEX = re.compile(
-    r'''(?ix)\b(api[_-]?key|secret|password|bearer|token)\s*[:=]\s*["']?[A-Za-z0-9_.~\-]{16,}["']?'''
+    r'''(?ix)(?<![A-Za-z0-9])(api[_-]?key|secret|password|bearer|token)\s*[:=]\s*["']?[A-Za-z0-9_.~\-]{16,}["']?'''
 )
 
 VENDOR_ENDPOINTS = {
