@@ -37,6 +37,23 @@ class TestEnterpriseDLPSanitizer(unittest.TestCase):
         )
         self.assertIn("[REDACTED_SECRET]", result)
 
+    def test_structured_credential_fields_are_redacted(self):
+        payload = {
+            "metadata": {
+                "api_key": "sk-example-abcdefghijklmnopqrstuvwxyz",
+                "OPENAI_API_KEY": "short-secret",
+                "access_token": {"value": "nested-secret"},
+                "password": 1234,
+                "authorization": "Bearer abcdefghijklmnopqrstuvwxyz",
+                "token_count": 42,
+            }
+        }
+        sanitized = index.sanitize_payload(payload)
+        for key in ("api_key", "OPENAI_API_KEY", "access_token", "password", "authorization"):
+            self.assertEqual(sanitized["metadata"][key], "[REDACTED_SECRET]")
+        self.assertEqual(sanitized["metadata"]["token_count"], 42)
+        self.assertEqual(payload["metadata"]["password"], 1234)
+
     def test_nested_payload_redaction(self):
         payload = {
             "metadata": {
@@ -229,6 +246,20 @@ class TestFailClosedOutboundBoundary(unittest.TestCase):
             json.loads(response["body"])["error"],
             "Request sanitization failed",
         )
+
+    def test_structured_credentials_never_reach_outbound_body(self):
+        secret = "sensitive-credential-abcdefghijklmnopqrstuvwxyz"
+        event = {
+            "headers": self.valid_headers,
+            "body": json.dumps({"metadata": {"api_key": secret}}),
+        }
+        upstream = Mock(status=200, headers={}, data=b"{}")
+        with patch.object(index.http, "request", return_value=upstream) as request_mock:
+            response = index.handler(event, None)
+        self.assertEqual(response["statusCode"], 200)
+        outbound = request_mock.call_args.kwargs["body"]
+        self.assertNotIn(secret, outbound)
+        self.assertEqual(json.loads(outbound)["metadata"]["api_key"], "[REDACTED_SECRET]")
 
     def test_upstream_request_uses_fixed_endpoint(self):
         upstream_response = Mock()
