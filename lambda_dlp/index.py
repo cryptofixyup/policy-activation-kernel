@@ -12,6 +12,12 @@ CREDENTIAL_KEY_REGEX = re.compile(
     r'''(?ix)(?<![A-Za-z0-9])(api[_-]?key|secret|password|bearer|token)\s*[:=]\s*["']?[A-Za-z0-9_.~\-]{16,}["']?'''
 )
 
+# Recognize structured credential fields, including vendor/access prefixes.
+# Values may be short, numeric or nested; never infer secrecy from length.
+CREDENTIAL_FIELD_REGEX = re.compile(
+    r"(?i)(?:^|[^a-z0-9])(api[_-]?key|secret|password|bearer|token|authorization)$"
+)
+
 VENDOR_ENDPOINTS = {
     "anthropic": "https://api.anthropic.com/v1/messages",
 }
@@ -47,7 +53,14 @@ def sanitize_text(text: str) -> str:
 def sanitize_payload(payload: Any) -> Any:
     try:
         if isinstance(payload, dict):
-            return {str(key): sanitize_payload(value) for key, value in payload.items()}
+            return {
+                str(key): (
+                    "[REDACTED_SECRET]"
+                    if CREDENTIAL_FIELD_REGEX.search(str(key))
+                    else sanitize_payload(value)
+                )
+                for key, value in payload.items()
+            }
         if isinstance(payload, list):
             return [sanitize_payload(item) for item in payload]
         if isinstance(payload, str):
